@@ -54,7 +54,7 @@ namespace op
         catch (const std::exception& e)
         {
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return cv::Mat{};
+            return cv::Mat();
         }
     }
 
@@ -104,7 +104,7 @@ namespace op
             else if (capProperty == CV_CAP_PROP_FRAME_HEIGHT)
                 mResolution.y = {(int)value};
             else if (capProperty == CV_CAP_PROP_POS_FRAMES)
-                mFrameNameCounter = fastTruncate((long long)value, 0ll, (long long)mImageDirectoryPath.size()-1);
+                mFrameNameCounter = fastTruncate((long long)value, 0ll, (long long)mFilePaths.size()-1);
             else if (capProperty == CV_CAP_PROP_FRAME_COUNT || capProperty == CV_CAP_PROP_FPS)
                 log("This property is read-only.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
             else

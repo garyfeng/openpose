@@ -1,31 +1,41 @@
-﻿Running OpenPose 3-D Reconstruction Demo
-====================================
+﻿OpenPose 3-D Reconstruction Module and Demo
+=============================================
 
-This is a beta version that makes body + face + hand keypoint 3-D reconstruction and rendering for 1 person. We will not keep updating it nor solving questions/issues about it at the moment. It requires the user to be familiar with computer vision, in particular with camera calibration, i.e. extraction of intrinsic and extrinsic parameters.
+## Contents
+1. [Introduction](#introduction)
+2. [Features](#features)
+3. [Required Hardware](#required-hardware)
+4. [Camera Calibration](#camera-calibration)
+5. [Camera Ordering](#camera-ordering)
+6. [Installing the OpenPose 3-D Reconstruction Module](#installing-the-openpose-3-d-reconstruction-module)
+7. [Known Bug](#known-bug)
 
-The Windows steps were tested and worked in the OpenPose 1.0.1 version from the last GitHub commit on July 18th, 2017 in the [official repository](https://github.com/CMU-Perceptual-Computing-Lab/openpose).
+
+
+## Introduction
+This experimental module performs 3-D keypoint (body, face, and hand) reconstruction and rendering for 1 person. We will not keep updating it nor solving questions/issues about it at the moment. It requires the user to be familiar with computer vision and camera calibration, including extraction of intrinsic and extrinsic parameters.
 
 
 
-### Description of this demo:
-- Auto detection of all the FLIR cameras, and extraction of images from each one of them.
+## Features
+- Auto detection of all FLIR cameras connected to your machine, and image streaming from all of them.
 - Hardware trigger and buffer `NewestFirstOverwrite` modes enabled. Hence, the algorithm will always get the last synchronized frame from each camera, deleting the rest.
-- 3-D reconstruction of body, face and hands for 1 person.
+- 3-D reconstruction of body, face, and hands for 1 person.
 - If more than 1 person is detected per camera, the algorithm will just try to match person 0 on each camera, which will potentially correspond to different people in the scene. Thus, the 3-D reconstruction will completely fail.
-- Only points with high threshold with respect to each one of the cameras are reprojected (and later rendered). An alternative for > 4 cameras could be to do 3-D reprojection and render all points with good views in more than N different cameras (not implemented here).
-- Only Direct linear transformation (DLT) applied. Non-linear optimization methods (e.g. from Ceres Solver) will potentially improve results (not implemented).
+- Only points with high threshold with respect to each one of the cameras are reprojected (and later rendered). An alternative for > 4 cameras could potentially do 3-D reprojection and render all points with good views in more than N different cameras (not implemented here).
+- Only Direct linear transformation (DLT) is applied for reconstruction. Non-linear optimization methods (e.g. from Ceres Solver) will potentially improve results (not implemented).
 - Basic OpenGL rendering with the `freeglut` library.
 
 
 
-### Hardware
-This demo assumes n arbitrary stereo cameras, FLIR company (former Point Grey). Ideally any USB-3 FLIR model should work, but we have only used the following specific specifications:
+## Required Hardware
+This demo assumes n arbitrary stereo cameras from the FLIR company (formerly Point Grey). Ideally any USB-3 FLIR model should work, but we have only used the following specific specifications:
 
 1. Camera details:
     - Blackfly S Color 1.3 MP USB3 Vision (ON Semi PYTHON 1300)
     - Model: BFS-U3-13Y3C-C
     - 1280x1024 resolution and 170 FPS
-    - https://www.ptgrey.com/blackfly-s-13-mp-color-usb3-vision-on-semi-python1300
+    - [https://www.ptgrey.com/blackfly-s-13-mp-color-usb3-vision-on-semi-python1300](https://www.ptgrey.com/blackfly-s-13-mp-color-usb3-vision-on-semi-python1300)
     - Hardware trigger synchronization required. For this camera model, see `Blackfly S` section in [https://www.ptgrey.com/tan/11052](https://www.ptgrey.com/tan/11052) or [https://www.ptgrey.com/KB/11052](https://www.ptgrey.com/KB/11052).
     - (Ubuntu-only) Open your USB ports following section `Configuring USBFS` in [http://www.ptgrey.com/KB/10685](http://www.ptgrey.com/KB/10685).
     - Install the Spinnaker SDK for your operating system: [https://www.ptgrey.com/support/downloads](https://www.ptgrey.com/support/downloads).
@@ -38,83 +48,46 @@ This demo assumes n arbitrary stereo cameras, FLIR company (former Point Grey). 
 
 
 
-### Calibrate Cameras
-You must manually get the intrinsic and extrinsic parameters of your cameras and introduce them on: `openpose3d\cameraParameters.hpp`. We used the 8-distortion-parameter version of OpenCV. By default, the program uses 3 cameras, but you can add or remove cameras from `cameraParameters.hpp` by adding or removing elements to `INTRINSICS`, `DISTORTIONS` and `M_EACH_CAMERA`. `INTRINSICS` corresponds to the intrinsic parameters, `DISTORTIONS` to the distortion coefficients, and `M_EACH_CAMERA` corresponds to the extrinsic parameters of the cameras with respect to camera 1 as origin.
+## Camera Calibration
+The user must manually get the intrinsic and extrinsic parameters of the cameras, introduce them on: `src/experimental/3d/cameraParameters.cpp`, and recompile OpenPose.
+
+The program uses 3 cameras by default, but cameras can be added or removed from `cameraParameters.hpp` by adding or removing elements to `INTRINSICS`, `DISTORTIONS` and `M_EACH_CAMERA`. `INTRINSICS` corresponds to the intrinsic parameters, `DISTORTIONS` to the distortion coefficients, and `M` corresponds to the extrinsic parameters of the cameras with respect to camera 1, i.e. camera 1 is considered the coordinates origin. However, it can be changed by the user by setting these parameters differently.
+
+3D OpenPose uses the 8-distortion-parameter version of OpenCV by default. Internally, the distortion parameters are used by the OpenCV function [undistort()](http://docs.opencv.org/3.2.0/da/d54/group__imgproc__transform.html#ga69f2545a8b62a6b0fc2ee060dc30559d) to rectify the images. This function can take either 4-, 5- or 8-parameter distortion coefficients (OpenCV 3.X also adds a 12- and 14-parameter alternatives). Therefore, either version (4, 5, 8, 12 or 14) will work in 3D OpenPose, the user just needs to modify the `DISTORTION_i` variables in `cameraParameters.hpp` with the desired number of distortion parameters for each camera.
 
 
 
-### Windows
-1. Open the OpenPose visual studio solution `windows\openpose.sln`.
-2. Right-click on `Solution 'OpenPose'` of the `Solution Explorer` window, usually placed at the top-right part of the VS screen.
-3. Click on `Properties`. Go to `Configuration Properties` -> `Configuration` and check `Build` for the `OpenPose3DReconstruction` project.
-4. Get the last Spinnaker SKD version, i.e. the FLIR camera driver and software:
-    - Download last Spinnaker SDK: https://www.ptgrey.com/support/downloads
-    - Copy `{PointGreyParentDirectory}\Point Grey Research\Spinnaker\bin64\vs2015\` as `{OpenPoseDirectory}\3rdparty\windows\spinnaker\bin\`. You can remove all the *.exe files.
-    - Copy `{PointGreyParentDirectory}\Point Grey Research\Spinnaker\include\` as `{OpenPoseDirectory}\3rdparty\windows\spinnaker\include\`.
-    - Copy `Spinnaker_v140.lib` and `Spinnakerd_v140.lib` from `{PointGreyParentDirectory}\Point Grey Research\Spinnaker\lib64\vs2015\` into `{OpenPoseDirectory}\3rdparty\windows\spinnaker\lib\`.
-    - (Optional) Spinnaker SDK overview: https://www.ptgrey.com/spinnaker-sdk
-5. Get the last OpenGL Glut library version for the rendering:
-    - Download the latest `MSVC Package` from http://www.transmissionzero.co.uk/software/freeglut-devel/
-    - Copy `{freeglutParentDirectory}\freeglut\bin\x64\` as `{OpenPoseDirectory}\3rdparty\windows\freeglut\bin\bin\`.
-    - Copy `{freeglutParentDirectory}\freeglut\include\` as `{OpenPoseDirectory}\3rdparty\windows\freeglut\include\`.
-    - Copy `{freeglutParentDirectory}\freeglut\lib\x64\` as `{OpenPoseDirectory}\3rdparty\windows\freeglut\lib\`.
+## Camera Ordering
+In order to verify that the camera parameters introduced by the user are sorted in the same way that OpenPose reads the cameras, make sure of the following points:
+
+1. Initially, introduce the camera parameters sorted by serial number. By default (in Spinnaker 1.8), they are sorted by serial number.
+2. When the program is run, OpenPose displays the camera serial number associated to each index of each detected camera. If the number of cameras detected is different to the number of actual cameras, make sure the hardware is properly connected and the camera leds are on.
+3. Make sure that the order in which you introduced your camera parameters matches this index ordering displayed by OpenPose. Again, it should be sorted by serial number, but different Spinnaker versions might work differently.
 
 
 
-### Ubuntu
-We did not create an Ubuntu version. We did an very first version for Ubuntu 16 long ago, but it was highly changed later. These are the steps we used for that one. Note that there might be needed some changes to make it work. Feel free to send us or make a pull request with any updated steps.
 
-1. Install the OpenGL rendering library: `sudo apt-get install freeglut3-dev`.
-2. Compile the standard OpenPose [from https://github.com/CMU-Perceptual-Computing-Lab/openpose](from https://github.com/CMU-Perceptual-Computing-Lab/openpose).
-3. Perform `make distribute` on OpenPose, and copy the `include` and `lib` files from `distribute` into your custom `3rdparty/openpose/`.
-4. Copy the `include` and `lib` folders from {OpenPose path}/3rdparty/caffe/distribute/ into your custom `3rdparty/caffe/`.
-5. Copy your Spinnaker desired version `include` and `lib` folders in your custom `3rdparty/spinnaker/`.
-7. From the Spinnaker `bin` folder, copy all the *.xml files to the generated build folder of your project.
-8. Get the required files from `{OpenPose path}/examples_beta/openpose3d/`. Check the Windows VS solution for more details.
-9. Create a proper Makefile or CMake file to run it. The following code is part of an old QMake (Qt) file generated for the old version, you can ideally get all the flags and includes from it:
-```
-DEFINES += USE_CAFFE USE_CUDNN
-INCLUDEPATH += \
-    $$PWD/include \
-    $$PWD/3rdparty/caffe/include \
-    $$PWD/3rdparty/openpose/include \
-    $$PWD/3rdparty/spinnaker/include \
-    /usr/include \
-    /usr/local/include \
-    /usr/local/cuda-8.0/include
-}
-# Generic
-LIBS += -L/usr/lib/ -L/usr/local/lib/ -L/usr/lib/x86_64-linux-gnu
-# OpenPose
-LIBS += -Wl,-rpath=$$PWD/3rdparty/openpose/lib
-LIBS += -Wl,-Bdynamic -L$$PWD/3rdparty/openpose/lib/ -lopenpose
-# Caffe
-LIBS += -Wl,-rpath=$$PWD/3rdparty/caffe/lib
-LIBS += -Wl,-Bdynamic -L$$PWD/3rdparty/caffe/lib/ -lcaffe
-# Spinnaker
-LIBS += -Wl,-rpath=$$PWD/3rdparty/spinnaker/lib
-LIBS += -Wl,-Bdynamic -L$$PWD/3rdparty/spinnaker/lib/ -lSpinnaker
-# OpenCV
-LIBS += -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_contrib -lopencv_calib3d
-# CUDA
-LIBS += -I/usr/local/cuda-8.0/include/
-LIBS += -L/usr/local/cuda-8.0/lib64 -lcudart -lcublas -lcurand
-# OpenGL
-LIBS += -lGLU -lGL -lglut
-# Other 3rdparty
-LIBS += -lcudnn -lglog -lgflags -lboost_system -lboost_filesystem -lm -lboost_thread
-LIBS += -pthread -fPIC -std=c++11 -fopenmp
-# Optimization flags
-LIBS += -DNDEBUG -O3 -march=native
-# Debug flags
-LIBS += -Wpedantic -Wall -Wextra -Wfatal-errors
-```
-10. If you find any error/difference, feel free to add a pull request to help other users.
+## Installing the OpenPose 3-D Reconstruction Module
+Check the [doc/installation.md#openpose-3d-reconstruction-module-and-demo](./installation.md#openpose-3d-reconstruction-module-and-demo) instructions.
 
 
 
 ## Expected Visual Results
-The visual GUI should show 3 screens, the Windows command line or Ubuntu bash terminal, the different cameras 2-D keypoint estimations, and the final 3-D reconstruction, similarly to the following image:
+The visual GUI should show 3 screens.
+
+1. The Windows command line or Ubuntu bash terminal.
+2. The different cameras 2-D keypoint estimations.
+3. The final 3-D reconstruction.
+
+It should be similar to the following image.
+
 <p align="center">
     <img src="media/openpose3d.png">
 </p>
+
+
+
+## Known Bug
+FreeGLUT is a quite light library. Due to that, there is a known bug in the 3D module:
+
+1. The window must be closed with the <kbd>Esc</kbd> key. Clicking the close button will cause a core dumped or std::exception error in OpenPose. Reason: There is no way to control the behaviour of the exit button in a FreeGLUT program. Feel free to let us know or create a pull request if you find a workaround applicable to 3-D OpenPose. Another alternative is ussing `--disable_multi_thread` in OpenPose. This would avoid the issue but slow down the program, especially in multi-GPU systems.
